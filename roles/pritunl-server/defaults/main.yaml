@@ -1,0 +1,21 @@
+---
+# install
+pritunl_version: 1.28.1548.86
+pritunl_mongodb_external: True
+
+# configuration
+pritunl_increase_open_limit_file: True
+
+pritunl_mongodb_uri: mongodb://localhost:27017/pritunl
+pritunl_server_key_path: ""
+pritunl_server_cert_path: ""
+pritunl_log_path: /var/log/pritunl.log
+pritunl_static_cache: "true"
+pritunl_temp_path: /tmp/pritunl_%r
+pritunl_bind_addr: 0.0.0.0
+pritunl_port: 443
+pritunl_debug: "false"
+pritunl_www_path: /usr/share/pritunl/www
+pritunl_local_address_interface: auto
+
+pritunl_secondary_mongodb_uri: ""

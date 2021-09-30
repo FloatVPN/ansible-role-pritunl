@@ -1,0 +1,15 @@
+namespace: community
+name: pritunl
+version: 1.0.0
+readme: README.md
+authors:
+- Jonathon Beauregard II (@jonathon2nd)
+- Alexandre-Jacques St-Jacques (@maelstrom96)
+description: Collection allowing to configure and install pritunl components
+license_file: LICENSE
+tags:
+  - pritunl
+repository: https://github.com/FloatVPN/ansible-role-pritunl
+documentation: https://github.com/FloatVPN/ansible-role-pritunl
+homepage: https://github.com/FloatVPN/ansible-role-pritunl
+issues: https://github.com/FloatVPN/ansible-role-pritunl/issues

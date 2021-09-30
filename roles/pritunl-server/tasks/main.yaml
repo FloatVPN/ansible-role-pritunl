@@ -1,0 +1,13 @@
+- name: "Install using the right OS"
+  include_tasks: "{{ ansible_facts['os_family'] }}.yaml"
+  tags:
+    - always
+
+- name: "Configure Pritunl"
+  include_tasks: "config.yaml"
+
+- name: Start service Pritunl, if not started
+  ansible.builtin.service:
+    name: pritunl
+    state: started
+    enabled: yes

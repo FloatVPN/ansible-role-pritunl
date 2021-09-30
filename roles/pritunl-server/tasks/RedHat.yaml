@@ -1,0 +1,76 @@
+---
+- name: Enable EPEL Repository on REHL 8
+  dnf:
+    name: ["epel-release", "elrepo-release"]
+    state: latest
+  become: True
+  when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['distribution_major_version'] == '8'
+
+- name: Enable EPEL Repository on REHL 7
+  yum:
+    name: ["epel-release", "elrepo-release"]
+    state: latest
+  become: True
+  when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['distribution_major_version'] == '7'
+
+- name: Copy out the pritunl repo file
+  copy:
+    src: files/pritunl.repo
+    dest: /etc/yum.repos.d/pritunl.repo
+
+- name: Import a key from ubuntu
+  ansible.builtin.rpm_key:
+    state: present
+    key: hkp://keyserver.ubuntu.com
+
+- name: Installing kmod-wireguard
+  dnf:
+   name: "kmod-wireguard"
+   state: latest
+
+- name: Installing wireguard-tools
+  dnf:
+   name: "wireguard-tools"
+   state: latest
+
+- name: Replacing openvpn for pritunl-openvpn
+  dnf:
+   name: "pritunl-openvpn"
+   state: latest
+   allowerasing: true
+
+- name: Installing pritunl
+  dnf:
+   name: "pritunl"
+   state: latest
+
+- name: "Increase open file limits"
+  block:
+  - name: Increase open file limit
+    pam_limits:
+      domain: "*"
+      limit_type: hard
+      limit_item: nofile
+      value: 64000
+
+  - name: Increase open file limit
+    pam_limits:
+      domain: "*"
+      limit_type: soft
+      limit_item: nofile
+      value: 64000
+
+  - name: Increase open file limit
+    pam_limits:
+      domain: root
+      limit_type: hard
+      limit_item: nofile
+      value: 64000
+
+  - name: Increase open file limit
+    pam_limits:
+      domain: root
+      limit_type: soft
+      limit_item: nofile
+      value: 64000
+  when: pritunl_increase_open_limit_file
