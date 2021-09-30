@@ -14,35 +14,31 @@
   when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['distribution_major_version'] == '7'
 
 - name: Copy out the pritunl repo file
-  copy:
-    src: files/pritunl.repo
-    dest: /etc/yum.repos.d/pritunl.repo
+  template:
+    src: "pritunl-RedHat.j2"
+    dest: /etc/yum.repos.d/pritunl-RedHat.repo
 
-- name: Import a key from ubuntu
-  ansible.builtin.rpm_key:
-    state: present
-    key: hkp://keyserver.ubuntu.com
+- name: Import gpg key
+  shell: "{{ item }}"
+  with_items:
+    - gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys 7568D9BB55FF9E5287D586017AE645C0CF8E292A
+    - gpg --armor --export 7568D9BB55FF9E5287D586017AE645C0CF8E292A > key.tmp; sudo rpm --import key.tmp; rm -f key.tmp
 
-- name: Installing kmod-wireguard
+- name: Installing wireguard
   dnf:
-   name: "kmod-wireguard"
+   name: ['kmod-wireguard', 'wireguard-tools']
    state: latest
 
-- name: Installing wireguard-tools
+- name: Installing pritunl
   dnf:
-   name: "wireguard-tools"
+   name: "pritunl"
    state: latest
 
 - name: Replacing openvpn for pritunl-openvpn
   dnf:
    name: "pritunl-openvpn"
    state: latest
-   allowerasing: true
-
-- name: Installing pritunl
-  dnf:
-   name: "pritunl"
-   state: latest
+   allowerasing: yes
 
 - name: "Increase open file limits"
   block:
@@ -74,3 +70,10 @@
       limit_item: nofile
       value: 64000
   when: pritunl_increase_open_limit_file
+
+# - name: permit traffic in public zone for https service
+#   ansible.posix.firewalld:
+#     zone: "public"
+#     service: https
+#     permanent: yes
+#     state: enabled

@@ -1,0 +1,7 @@
+- name: Update pritunl conf file
+  template:
+    src: "pritunl.conf.j2"
+    dest: "/etc/pritunl.conf"
+  notify: restart pritunl
+  tags:
+    - pritunl-update
