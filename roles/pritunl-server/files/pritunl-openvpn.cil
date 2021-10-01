@@ -1,0 +1,14 @@
+module pritunl-openvpn 1.0;
+
+require {
+        type pritunl_t;
+        type openvpn_port_t;
+        type reserved_port_t;
+        type hi_reserved_port_t;
+        class udp_socket name_bind;
+}
+
+#============= pritunl_t ==============
+allow pritunl_t hi_reserved_port_t:udp_socket name_bind;
+allow pritunl_t openvpn_port_t:udp_socket name_bind;
+allow pritunl_t reserved_port_t:udp_socket name_bind;

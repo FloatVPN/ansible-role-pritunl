@@ -6,6 +6,11 @@
 - name: "Configure Pritunl"
   include_tasks: "config.yaml"
 
+- name: install plugins
+  include_tasks: plugins.yaml
+  when: pritunl_plugins is defined
+  tags: pritunl-plugins
+
 - name: Start service Pritunl, if not started
   ansible.builtin.service:
     name: pritunl

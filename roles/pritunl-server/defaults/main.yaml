@@ -19,3 +19,8 @@ pritunl_www_path: /usr/share/pritunl/www
 pritunl_local_address_interface: auto
 
 pritunl_secondary_mongodb_uri: ""
+
+#pritunl_plugins_requirements: 
+
+#pritunl_plugins:
+#  - name: openvpn-status

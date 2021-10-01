@@ -1,0 +1,16 @@
+# Available libraries included with a default Pritunl installation
+from pritunl import logger
+
+# [SYNCHRONOUS] Called when a server is started to return custom configuration
+# lines that will be added to the servers OpenVPN configuration.
+def server_config(host_id, host_name, server_id, server_name, port, protocol,
+        ipv6, ipv6_firewall, network, network6, network_mode, network_start,
+        network_stop, restrict_routes, bind_address, onc_hostname,
+        dh_param_bits, multi_device, dns_servers, search_domain, otp_auth,
+        cipher, hash, inter_client, ping_interval, ping_timeout,
+        link_ping_interval, link_ping_timeout, max_clients, replica_count,
+        dns_mapping, debug, routes, interface, bridge_interface, vxlan,
+        **kwargs):
+    line = "status /var/run/" + server_name + "-openvpn-status.log 5"
+    logger.info("Adding OpenVPN config line: " + line)
+    return line

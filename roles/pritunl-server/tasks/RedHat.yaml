@@ -71,9 +71,70 @@
       value: 64000
   when: pritunl_increase_open_limit_file
 
-# - name: permit traffic in public zone for https service
-#   ansible.posix.firewalld:
-#     zone: "public"
-#     service: https
-#     permanent: yes
-#     state: enabled
+- name: Set CAP_NET_BIND_SERVICE=+eip on /usr/bin/openvpn
+  community.general.capabilities:
+    path: /usr/bin/openvpn
+    capability: CAP_NET_BIND_SERVICE+eip
+    state: present
+
+# - name: Set CAP_NET_BIND_SERVICE=+eip on /usr/bin/pritunl/bin/python2
+#   community.general.capabilities:
+#     path: /usr/bin/pritunl/bin/python2
+#     capability: CAP_NET_BIND_SERVICE+eip
+#     state: present
+
+# - name: Set CAP_NET_BIND_SERVICE=+eip on /usr/bin/pritunl
+#   community.general.capabilities:
+#     path: /usr/bin/pritunl
+#     capability: CAP_NET_BIND_SERVICE+eip
+#     state: present
+
+- name: Installing setools
+  dnf:
+   name: "setools"
+   state: latest
+
+- name: Check to see if semodule is loaded
+  shell: "semodule -l | grep -i 'pritunl-openvpn'"
+  register: grep_output
+  ignore_errors: true
+
+- name: Copy out the pritunl openvpn selinux policy file
+  copy:
+    src: files/pritunl-openvpn.cil
+    dest: ~/pritunl-openvpn.cil
+  when: grep_output.stdout == ""
+
+- name: Compile SELinux policy
+  command: checkmodule -M -m -o ~/pritunl-openvpn.mod ~/pritunl-openvpn.cil
+  when: grep_output.stdout == ""
+
+- name: Package SELinux policy
+  command: semodule_package -o ~/pritunl-openvpn.pp -m ~/pritunl-openvpn.mod
+  when: grep_output.stdout == ""
+
+- name: Load SELinux policy package
+  command: semodule -i ~/pritunl-openvpn.pp
+  when: grep_output.stdout == ""
+  
+- name: Remove temporary policy files
+  ansible.builtin.file:
+    path: ~/pritunl-openvpn.*
+    state: absent
+  when: grep_output.stdout == ""
+
+### Firewall rules
+
+- name: permit traffic in public zone for https service
+  ansible.posix.firewalld:
+    zone: "public"
+    service: https
+    permanent: yes
+    state: enabled
+
+- name: permit traffic in public zone for 443/udp
+  ansible.posix.firewalld:
+    zone: "public"
+    service: https
+    permanent: yes
+    state: enabled

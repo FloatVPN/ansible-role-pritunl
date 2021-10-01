@@ -1,0 +1,29 @@
+---
+- name: install pip requirements
+  pip:
+    name: "{{ item }}"
+    executable: /usr/lib/pritunl/bin/pip
+  with_items: "{{ pritunl_plugins_requirements|default([]) }}"
+
+- name: Creates pritunl plugins directory
+  file:
+    path: /var/lib/pritunl/plugins
+    state: directory
+    mode: 0775
+
+- name: install custom plugins
+  template:
+    src: "pritunl-plugin-{{ item.name }}.j2"
+    dest: "/var/lib/pritunl/plugins/{{ item.name }}.py"
+  notify: restart pritunl
+  with_items: "{{ pritunl_plugins|default([]) }}"
+
+#- name: install custom plugins
+#  template:
+#    src: "pritunl-plugin-{{ item }}.j2"
+#    dest: "/var/lib/pritunl/plugins/{{ item }}.py"
+#  notify: restart pritunl
+#  when: pritunl_plugins | selectattr("name","equalto",item) | list | count == 1
+#  with_items:
+#    - graylog
+#    - default-groups
