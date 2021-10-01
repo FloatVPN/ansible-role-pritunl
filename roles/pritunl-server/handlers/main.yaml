@@ -3,3 +3,6 @@
   service:
     name: pritunl
     state: restarted
+
+- name: reboot host
+  reboot:
