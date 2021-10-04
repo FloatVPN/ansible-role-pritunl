@@ -24,6 +24,17 @@
     - gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys 7568D9BB55FF9E5287D586017AE645C0CF8E292A
     - gpg --armor --export 7568D9BB55FF9E5287D586017AE645C0CF8E292A > key.tmp; sudo rpm --import key.tmp; rm -f key.tmp
 
+- name: Installing chrony
+  dnf: 
+   name: "chrony"
+   state: latest
+   
+- name: Start service chrony, if not started
+  service:
+    name: chronyd
+    state: started
+    enabled: yes
+
 - name: Installing wireguard
   dnf:
    name: ['kmod-wireguard', 'wireguard-tools']

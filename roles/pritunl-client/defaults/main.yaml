@@ -1,0 +1,5 @@
+---
+pritunl_server_url: ""
+pritunl_server_api_token: ""
+pritunl_server_api_secret: ""
+pritunl_organization: ""

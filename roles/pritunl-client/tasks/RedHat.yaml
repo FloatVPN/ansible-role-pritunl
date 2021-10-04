@@ -9,7 +9,32 @@
     - gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys 7568D9BB55FF9E5287D586017AE645C0CF8E292A
     - gpg --armor --export 7568D9BB55FF9E5287D586017AE645C0CF8E292A > key.tmp; sudo rpm --import key.tmp; rm -f key.tmp
 
-- name: Installing Pritunl-client
-  yum:
-   name: "Pritunl-client"
+- name: Installing chrony
+  dnf: 
+   name: "chrony"
    state: latest
+   
+- name: Start service chrony, if not started
+  service:
+    name: chronyd
+    state: started
+    enabled: yes
+
+- name: Check if pritunl.rpm is installed
+  command: rpm -q pritunl-client
+  register: rpm_check
+  failed_when: rpm_check.rc > 1
+  changed_when: false
+
+- name: Import pritunl client
+  shell: "{{ item }}"
+  with_items:
+    - wget https://repo.pritunl.com/stable/yum/oraclelinux/8/pritunl-client-1.2.2943.11-1.el8.oraclelinux.x86_64.rpm
+    - rpm -i --replacefiles pritunl-client-1.2.2943.11-1.el8.oraclelinux.x86_64.rpm
+  when: rpm_check.rc == 1
+
+# Don't use till he accepts the PR
+# - name: Installing Pritunl-client
+#   yum:
+#    name: "pritunl-client"
+#    state: latest

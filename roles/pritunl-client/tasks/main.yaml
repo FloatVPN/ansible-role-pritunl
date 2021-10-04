@@ -3,3 +3,17 @@
   include_tasks: "{{ ansible_facts['os_family'] }}.yaml"
   tags:
     - always
+
+- name: "Run the python script, and get url"
+  ansible.builtin.script:
+    cmd: "files/get-config-url.py -url {{ pritunl_server_url }} -token {{ pritunl_server_api_token }} -secret {{ pritunl_server_api_secret }} -organization {{ pritunl_organization }}"
+  register: pritunl_url
+  args:
+    executable: python3
+
+- name: "shutup"
+  debug:
+    msg: "pritunl_url: {{ pritunl_url }}"
+
+- name: "Enrole pritunl client"
+  shell: "pritunl-client add {{ pritunl_url.stdout_lines[0] }}"
