@@ -14,6 +14,11 @@
    name: "chrony"
    state: latest
    
+- name: Installing wget
+  dnf: 
+   name: "wget"
+   state: latest
+   
 - name: Start service chrony, if not started
   service:
     name: chronyd
