@@ -18,11 +18,17 @@
     src: "pritunl-RedHat.j2"
     dest: /etc/yum.repos.d/pritunl-RedHat.repo
 
+- name: Check if gpg key is imported
+  shell: "gpg --list-keys 7568D9BB55FF9E5287D586017AE645C0CF8E292A"
+  changed_when: false
+  register: gpg_check
+
 - name: Import gpg key
   shell: "{{ item }}"
   with_items:
     - gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys 7568D9BB55FF9E5287D586017AE645C0CF8E292A
     - gpg --armor --export 7568D9BB55FF9E5287D586017AE645C0CF8E292A > key.tmp; sudo rpm --import key.tmp; rm -f key.tmp
+  when: gpg_check.rc == 2
 
 - name: Installing chrony
   dnf: 
@@ -41,10 +47,27 @@
    state: latest
   notify: reboot host
 
-- name: Installing pritunl
-  dnf:
+
+- name: Check if pritunl.rpm is installed
+  command: rpm -q {{ pritunl_server_rpm | replace(".rpm", "")}}
+  register: rpm_check
+  failed_when: rpm_check.rc > 1
+  changed_when: false
+  when: pritunl_server_rpm is defined
+
+- name: Download & install pritunl rpm
+  shell: "{{ item }}"
+  with_items:
+    - wget https://repo.pritunl.com/stable/yum/oraclelinux/8/{{ pritunl_server_rpm }}
+    - rpm -U --replacefiles {{ pritunl_server_rpm }}
+  when: rpm_check.rc == 1
+  notify: restart pritunl
+
+- name: Install pritunl
+  yum:
    name: "pritunl"
    state: latest
+  when: pritunl_server_rpm is undefined
 
 - name: Replacing openvpn for pritunl-openvpn
   dnf:
@@ -105,6 +128,7 @@
   shell: "semodule -l | grep -i 'pritunl-openvpn'"
   register: grep_output
   failed_when: "grep_output.rc == 2"
+  changed_when: false
   ignore_errors: true
 
 - name: Installing setools

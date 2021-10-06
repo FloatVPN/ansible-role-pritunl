@@ -9,11 +9,12 @@
     src: files/pritunl-client-parser.py
     dest: ~/pritunl-client-parser.py
 
-- name: "Run the python script, and get list"
+- name: "Get pritunl-client profile list"
   shell: "pritunl-client list | python3 ~/pritunl-client-parser.py"
+  changed_when: false
   register: pritunl_list
 
-- name: "Run the python script, and get url"
+- name: "Retrieve pritunl-client provisionning URL"
   ansible.builtin.script:
     cmd: "files/get-config-url.py -url {{ pritunl_server_url }} -token {{ pritunl_server_api_token }} -secret {{ pritunl_server_api_secret }} -organization {{ pritunl_organization }}"
   register: pritunl_url
@@ -27,8 +28,9 @@
   register: add_profile
 
 # TODO: Fix conditionnal so this doesn't need to run all the time
-- name: "Run the python script, and get list"
+- name: "Get pritunl-client profile list"
   shell: "pritunl-client list | python3 ~/pritunl-client-parser.py"
+  changed_when: false
   register: pritunl_list2
   #when: add_profile.changed
 
