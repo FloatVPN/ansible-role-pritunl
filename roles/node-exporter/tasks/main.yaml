@@ -1,0 +1,87 @@
+- name: Installing python
+  dnf:
+    name: "python3, python3-pip"
+    state: latest
+- name: Install docker python package
+  pip:
+    name: docker
+    
+- name: setup node exporter
+  docker_container:
+    name: node-exporter
+    image: quay.io/prometheus/node-exporter:latest
+    state: started
+    network_mode: host
+    pid_mode: host
+    volumes:
+    - /:/host:ro,rslave
+    env:
+      path.rootfs: /host
+    
+- name: setup wireguard exporter
+  docker_container:
+    name: wireguard-exporter
+    image: mindflavor/prometheus-wireguard-exporter
+    state: started
+    network_mode: host
+    capabilities: [NET_ADMIN]
+    command: -r
+
+- name: "Get all status files"
+  find:
+    paths: ["/var/run/"]
+    patterns: "*openvpn-status.log"
+    file_type: "file"
+  register: status_files
+
+- name: "set tmp vars"
+  set_fact:
+    volume_mounts_tmp: "{% for item in status_files.files %}{{ item.path }}:/etc/openvpn_exporter/{{ item.path | basename }}{% endfor %}"
+    status_paths_tmp: "{% for item in status_files.files %}/etc/openvpn_exporter/{{item.path | basename}}{% endfor %}"
+    
+- name: "set main vars"
+  set_fact:
+    status_paths: '{{ status_paths_tmp.split() | join(",") }}'
+    volume_mounts: "{{ volume_mounts_tmp.split() }}"
+
+- name: setup openvpn exporter
+  docker_container:
+    name: openvpn-exporter
+    image: kumina/openvpn-exporter
+    state: started
+    network_mode: host
+    volumes: "{{ volume_mounts }}"
+    command: "-openvpn.status_paths {{ status_paths }}"
+
+# You should install Docker before this rule.
+- name: configure ufw before.init to remove existing rules
+  blockinfile:
+    path: /etc/ufw/before.init
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    insertafter: stop\)
+    mode: "a+x"
+    block: |
+      {{ iptables_preemptive_rules }}
+      iptables -F DOCKER-USER || true
+      iptables -A DOCKER-USER -j RETURN || true
+      iptables -X ufw-user-input || true
+  notify: restart ufw
+
+- name: configure ufw to work with DOCKER-USER chain name
+  blockinfile:
+    path: /etc/ufw/after.rules
+    marker: "# {mark} ANSIBLE MANAGED BLOCK (docker-user)"
+    block: |
+      *filter
+      :DOCKER-USER - [0:0]
+      :ufw-user-input - [0:0]
+      :ufw-after-logging-forward - [0:0]
+
+      -A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+      -A DOCKER-USER -m conntrack --ctstate INVALID -j DROP
+      -A DOCKER-USER -i {{ ansible_default_ipv4.interface }} -j ufw-user-input
+      -A DOCKER-USER -i {{ ansible_default_ipv4.interface }} -j ufw-after-logging-forward
+      -A DOCKER-USER -i {{ ansible_default_ipv4.interface }} -j DROP
+
+      COMMIT
+  notify: restart ufw
