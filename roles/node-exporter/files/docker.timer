@@ -1,0 +1,9 @@
+[Unit]
+Description=Runs the docker.service 1 minute after boot up
+
+[Timer]
+OnBootSec=1 m
+Unit=docker.service
+
+[Install]
+WantedBy=basic.target

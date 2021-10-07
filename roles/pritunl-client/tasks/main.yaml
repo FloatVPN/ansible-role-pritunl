@@ -35,5 +35,5 @@
   #when: add_profile.changed
 
 - name: "Start pritunl-client profile"
-  shell: 'pritunl-client start {{ (pritunl_list2.stdout|from_json|list|selectattr("name", "equalto", ansible_nodename)|list)[0].id }} --mode wg'
+  shell: 'pritunl-client start {{ (pritunl_list2.stdout|from_json|list|selectattr("name", "equalto", ansible_nodename)|list)[0].id }} --mode ovpn'
   when: (pritunl_list2.stdout|from_json|list|selectattr("name", "equalto", ansible_nodename)|list|first).status == "Disconnected"

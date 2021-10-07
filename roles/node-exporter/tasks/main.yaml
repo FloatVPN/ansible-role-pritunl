@@ -5,7 +5,17 @@
 - name: Install docker python package
   pip:
     name: docker
-    
+
+- name: Copy out docker timer
+  copy:
+    src: files/docker.timer
+    dest: /usr/lib/systemd/system/docker.timer
+
+- name: Enable docker timer
+  ansible.builtin.service:
+    name: docker.timer
+    enabled: yes
+
 - name: setup node exporter
   docker_container:
     name: node-exporter
@@ -23,6 +33,7 @@
     name: wireguard-exporter
     image: mindflavor/prometheus-wireguard-exporter
     state: started
+    restart_policy: always
     network_mode: host
     capabilities: [NET_ADMIN]
     command: -r
@@ -49,6 +60,7 @@
     name: openvpn-exporter
     image: kumina/openvpn-exporter
     state: started
+    restart_policy: always
     network_mode: host
     volumes: "{{ volume_mounts }}"
     command: "-openvpn.status_paths {{ status_paths }}"
@@ -61,11 +73,21 @@
     insertafter: stop\)
     mode: "a+x"
     block: |
-      {{ iptables_preemptive_rules }}
       iptables -F DOCKER-USER || true
       iptables -A DOCKER-USER -j RETURN || true
       iptables -X ufw-user-input || true
   notify: restart ufw
+
+# You should install Docker before this rule.
+# - name: configure ufw before.init to add global block
+#   blockinfile:
+#     path: /etc/ufw/before.init
+#     marker: "# {mark} ANSIBLE MANAGED BLOCK2"
+#     insertafter: start\)
+#     mode: "a+x"
+#     block: |
+#       {{ iptables_preemptive_rules }}
+#   notify: restart ufw
 
 - name: configure ufw to work with DOCKER-USER chain name
   blockinfile:
@@ -76,7 +98,6 @@
       :DOCKER-USER - [0:0]
       :ufw-user-input - [0:0]
       :ufw-after-logging-forward - [0:0]
-
       -A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
       -A DOCKER-USER -m conntrack --ctstate INVALID -j DROP
       -A DOCKER-USER -i {{ ansible_default_ipv4.interface }} -j ufw-user-input

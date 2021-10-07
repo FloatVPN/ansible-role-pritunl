@@ -22,6 +22,7 @@
   shell: "gpg --list-keys 7568D9BB55FF9E5287D586017AE645C0CF8E292A"
   changed_when: false
   register: gpg_check
+  failed_when: gpg_check.rc > 2 or gpg_check.rc == 1
 
 - name: Import gpg key
   shell: "{{ item }}"
@@ -33,6 +34,11 @@
 - name: Installing chrony
   dnf: 
    name: "chrony"
+   state: latest
+
+- name: Installing wget
+  dnf: 
+   name: "wget"
    state: latest
    
 - name: Start service chrony, if not started
@@ -54,6 +60,12 @@
   failed_when: rpm_check.rc > 1
   changed_when: false
   when: pritunl_server_rpm is defined
+
+- name: Install pritunl rpm requirements
+  dnf:
+   name: ['iptables', 'net-tools', 'openvpn', 'pritunl-ndppd', 'python3']
+   state: latest
+  when: rpm_check.rc == 1
 
 - name: Download & install pritunl rpm
   shell: "{{ item }}"

@@ -9,7 +9,7 @@ pritunl_increase_open_limit_file: True
 pritunl_mongodb_uri: mongodb://localhost:27017/pritunl
 pritunl_server_key_path: ""
 pritunl_server_cert_path: ""
-pritunl_log_path: /var/log/pritunl.log
+pritunl_log_path: /var/log/pritunl-server.log
 pritunl_static_cache: "true"
 pritunl_temp_path: /tmp/pritunl_%r
 pritunl_bind_addr: 0.0.0.0

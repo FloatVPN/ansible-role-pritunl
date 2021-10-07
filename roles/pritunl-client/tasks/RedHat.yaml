@@ -7,6 +7,7 @@
   shell: "gpg --list-keys 7568D9BB55FF9E5287D586017AE645C0CF8E292A"
   changed_when: false
   register: gpg_check
+  failed_when: gpg_check.rc > 2 or gpg_check.rc == 1
 
 - name: Import gpg key
   shell: "{{ item }}"

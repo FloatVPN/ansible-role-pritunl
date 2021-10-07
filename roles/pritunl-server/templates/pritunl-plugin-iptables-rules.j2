@@ -1,0 +1,61 @@
+# Available libraries included with a default Pritunl installation
+from pritunl import logger
+from pritunl import utils
+
+rules = [[
+    'iptables',
+    '-I',
+    'INPUT',
+    '-s',
+    '10.0.0.0/8',
+    '-d',
+    '10.3.0.0/16',
+    '-j',
+    'DROP',
+    '-m', 'comment',
+    '--comment', 'pritunl-plugin-iptables-rules'
+],
+[
+    'iptables',
+    '-I',
+    'INPUT',
+    '-s',
+    '10.3.0.0/16',
+    '-d',
+    '10.3.0.0/16',
+    '-j',
+    'ACCEPT',
+    '-m', 'comment',
+    '--comment', 'pritunl-plugin-iptables-rules'
+],
+]
+
+
+# [SYNCHRONOUS] Called when a server is started. Call occurs after OpenVPN
+# process has been configured and started.
+def server_start(host_id, host_name, server_id, server_name, port, protocol,
+        ipv6, ipv6_firewall, network, network6, network_mode, network_start,
+        network_stop, restrict_routes, bind_address, onc_hostname,
+        dh_param_bits, multi_device, dns_servers, search_domain, otp_auth,
+        cipher, hash, inter_client, ping_interval, ping_timeout,
+        link_ping_interval, link_ping_timeout, max_clients, replica_count,
+        dns_mapping, debug, interface, bridge_interface, vxlan, **kwargs):
+
+    for rule in rules:
+        utils.check_output_logged(rule)
+        logger.info("Added IPtables rule: " + " ".join(rule))
+    
+# [SYNCHRONOUS] Called when a server is stopped.
+def server_stop(host_id, host_name, server_id, server_name, port, protocol,
+        ipv6, ipv6_firewall, network, network6, network_mode, network_start,
+        network_stop, restrict_routes, bind_address, onc_hostname,
+        dh_param_bits, multi_device, dns_servers, search_domain, otp_auth,
+        cipher, hash, inter_client, ping_interval, ping_timeout,
+        link_ping_interval, link_ping_timeout, max_clients, replica_count,
+        dns_mapping, debug, interface, bridge_interface, vxlan, **kwargs):
+    
+    for rule in rules:
+        tmp_rule = rule
+        tmp_rule[1] = "-D"
+        utils.check_output_logged(tmp_rule)
+        logger.info("Removing IPtables rule: " + " ".join(tmp_rule))
