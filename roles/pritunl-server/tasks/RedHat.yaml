@@ -143,6 +143,11 @@
   changed_when: false
   ignore_errors: true
 
+- name: Force selinux reload
+  shell: "echo"
+  register: grep_output
+  when: force_update_selinux
+
 - name: Installing setools
   dnf:
    name: "setools"

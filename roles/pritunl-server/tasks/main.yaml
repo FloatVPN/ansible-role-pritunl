@@ -11,6 +11,21 @@
   when: pritunl_plugins is defined
   tags: pritunl-plugins
 
+- name: install patch
+  yum:
+   name: "patch"
+   state: latest
+
+- name: Apply patch to app.py
+  ansible.posix.patch:
+    src: files/app.py.patch
+    dest: /usr/lib/pritunl/lib/python3.6/site-packages/pritunl/app.py
+
+- name: Apply patch to instance.py
+  ansible.posix.patch:
+    src: files/instance.py.patch
+    dest: /usr/lib/pritunl/lib/python3.6/site-packages/pritunl/server/instance.py 
+
 - name: Start service Pritunl, if not started
   ansible.builtin.service:
     name: pritunl

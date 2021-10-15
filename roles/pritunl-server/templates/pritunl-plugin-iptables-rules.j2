@@ -1,36 +1,73 @@
+{% raw %}
 # Available libraries included with a default Pritunl installation
 from pritunl import logger
 from pritunl import utils
+import socket
+import fcntl
+import struct
+import copy
 
-rules = [[
-    'iptables',
-    '-I',
-    'INPUT',
-    '-s',
-    '10.0.0.0/8',
-    '-d',
-    '10.3.0.0/16',
-    '-j',
-    'DROP',
-    '-m', 'comment',
-    '--comment', 'pritunl-plugin-iptables-rules'
-],
+rules = [
+# ufw allow in on wg0 to [wg_address] port 443
+# Allow Wireguard users to talk to the reverse proxy
 [
-    'iptables',
-    '-I',
-    'INPUT',
-    '-s',
-    '10.3.0.0/16',
-    '-d',
-    '10.3.0.0/16',
-    '-j',
-    'ACCEPT',
-    '-m', 'comment',
-    '--comment', 'pritunl-plugin-iptables-rules'
+    'ufw',
+    'allow',
+    'in',
+    'on',
+    '{wg_interface}',
+    'to',
+    '{wg_address}',
+    'port',
+    '443',
+    'proto',
+    'tcp'
+],
+# Allow all VPN users to talk to the reverse proxy on 10.254.254.254 to allow speedtest
+[
+    'ufw',
+    'allow',
+    'in',
+    'on',
+    '{ovpn_interface},{wg_interface}',
+    'to',
+    '10.254.254.254',
+    'port',
+    '80,443',
+    'proto',
+    'tcp'
 ],
 ]
 
+#    rule + [
+#        '-m', 'comment',
+#        '--comment', 'pritunl-%s' % server_id,
+#    ]
 
+def log(str):
+    logger.info("[plugin:iptables-rules] " + str)
+
+def get_interface_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15].encode('utf-8'))
+    )[20:24])
+
+def get_wg_interface(ovpn_interface):
+    number = [int(s) for s in ovpn_interface.split() if s.isdigit()]
+    return "wg" + number[0]
+    
+def populate_rule_vars(rule, values):
+    new_rule = rule
+    for i, rule_item in enumerate(new_rule):
+        for key in values.keys():
+            rule_item = rule_item.replace('{%s}' % key, values[key])
+            new_rule[i] = rule_item
+            
+    return new_rule
+    
 # [SYNCHRONOUS] Called when a server is started. Call occurs after OpenVPN
 # process has been configured and started.
 def server_start(host_id, host_name, server_id, server_name, port, protocol,
@@ -39,11 +76,28 @@ def server_start(host_id, host_name, server_id, server_name, port, protocol,
         dh_param_bits, multi_device, dns_servers, search_domain, otp_auth,
         cipher, hash, inter_client, ping_interval, ping_timeout,
         link_ping_interval, link_ping_timeout, max_clients, replica_count,
-        dns_mapping, debug, interface, bridge_interface, vxlan, **kwargs):
+        dns_mapping, debug, interface, bridge_interface, vxlan, server_instance, **kwargs):
+    log("server_start called")
 
-    for rule in rules:
-        utils.check_output_logged(rule)
-        logger.info("Added IPtables rule: " + " ".join(rule))
+    # Delete default allow all rules from pritunl
+    for rule in server_instance.iptables._accept:
+        if rule[0] == "INPUT":
+            log("Deleting IPtables rule: " + " ".join(rule))
+            server_instance.iptables._accept.remove(rule)
+            server_instance.iptables._remove_iptables_rule(rule)
+
+    # Delete default allow all rules from pritunl
+    for rule in server_instance.iptables_wg._accept:
+        if rule[0] == "INPUT":
+            log("Deleting IPtables rule: " + " ".join(rule))
+            server_instance.iptables_wg._accept.remove(rule)
+            server_instance.iptables_wg._remove_iptables_rule(rule)
+
+    for rule in copy.deepcopy(rules):
+        new_rule = populate_rule_vars(rule, {"wg_address": get_interface_ip_address(server_instance.interface_wg), "wg_interface": server_instance.interface_wg, "ovpn_interface": server_instance.interface})
+    
+        utils.check_output_logged(new_rule)
+        log("Added rule: " + " ".join(new_rule))
     
 # [SYNCHRONOUS] Called when a server is stopped.
 def server_stop(host_id, host_name, server_id, server_name, port, protocol,
@@ -52,10 +106,17 @@ def server_stop(host_id, host_name, server_id, server_name, port, protocol,
         dh_param_bits, multi_device, dns_servers, search_domain, otp_auth,
         cipher, hash, inter_client, ping_interval, ping_timeout,
         link_ping_interval, link_ping_timeout, max_clients, replica_count,
-        dns_mapping, debug, interface, bridge_interface, vxlan, **kwargs):
-    
-    for rule in rules:
-        tmp_rule = rule
-        tmp_rule[1] = "-D"
-        utils.check_output_logged(tmp_rule)
-        logger.info("Removing IPtables rule: " + " ".join(tmp_rule))
+        dns_mapping, debug, interface, bridge_interface, vxlan, server_instance, **kwargs):
+    try:
+        log("server_stop called")
+        for rule in copy.deepcopy(rules):
+            new_rule = populate_rule_vars(rule, {"wg_address": get_interface_ip_address(server_instance.interface_wg), "wg_interface": server_instance.interface_wg, "ovpn_interface": server_instance.interface})
+            
+            if new_rule[0].lower() == 'ufw':
+                new_rule.insert(1, 'delete')
+            
+            utils.check_output_logged(new_rule)
+            log("Deleted rule: " + " ".join(new_rule))
+    except:
+        log("Error happened while trying to cleanup firewall rules")
+{% endraw %}

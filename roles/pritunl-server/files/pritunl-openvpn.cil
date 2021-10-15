@@ -4,11 +4,16 @@ require {
         type pritunl_t;
         type openvpn_port_t;
         type reserved_port_t;
+        type var_lib_t;
+        type pritunl_tmp_t;
         type hi_reserved_port_t;
         class udp_socket name_bind;
+        class file { getattr ioctl open read relabelfrom relabelto setattr unlink write };
 }
 
 #============= pritunl_t ==============
 allow pritunl_t hi_reserved_port_t:udp_socket name_bind;
 allow pritunl_t openvpn_port_t:udp_socket name_bind;
 allow pritunl_t reserved_port_t:udp_socket name_bind;
+allow pritunl_t pritunl_tmp_t:file relabelfrom;
+allow pritunl_t var_lib_t:file { getattr ioctl open read relabelto setattr unlink write };

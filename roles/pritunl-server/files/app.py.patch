@@ -1,0 +1,16 @@
+--- app.py	2021-10-15 10:06:19.704570112 -0600
++++ app2.py	2021-10-15 10:09:45.071461742 -0600
+@@ -215,10 +215,10 @@
+                 settings.app.reverse_proxy else '',
+             'REDIRECT_SERVER': redirect_server,
+             'BIND_HOST': settings.conf.bind_addr,
+-            'BIND_PORT': str(settings.app.server_port),
++            'BIND_PORT': str(settings.conf.port),
+             'INTERNAL_ADDRESS': internal_addr,
+-            'CERT_PATH': server_cert_path or '',
+-            'KEY_PATH': server_key_path or '',
++            #'CERT_PATH': server_cert_path or '',
++            #'KEY_PATH': server_key_path or '',
+         }),
+     )
+ 

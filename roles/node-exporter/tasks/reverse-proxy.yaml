@@ -1,0 +1,36 @@
+- name: Create haproxy directory
+  file:
+    path: /etc/haproxy
+    state: directory
+
+- name: Copy out haproxy config
+  copy:
+    src: files/haproxy.cfg
+    dest: /etc/haproxy/haproxy.cfg
+
+    #
+- name: Copy out haproxy cert
+  copy:
+    content: "{{ selfsignedpem }}"
+    dest: /etc/haproxy/selfsigned.pem
+
+- name: Allow haproxy to talk to pritunl
+  community.general.ufw:
+    rule: allow
+    direction: in
+    interface: docker0
+    dest: 10.254.254.254
+    to_port: '8443'
+
+- name: setup haproxy
+  docker_container:
+    name: haproxy
+    image: haproxy
+    state: started
+    ports: 
+      - "80:80"
+      - "443:443"
+    user: root
+    volumes:
+    - /etc/haproxy:/usr/local/etc/haproxy:ro
+    - /etc/haproxy/selfsigned.pem:/usr/local/etc/ssl/selfsigned.pem:ro

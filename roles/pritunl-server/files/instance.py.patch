@@ -1,0 +1,18 @@
+--- instance.py	2021-10-15 10:14:18.350002279 -0600
++++ "instance (copy).py"	2021-10-15 10:16:37.493615179 -0600
+@@ -1682,6 +1682,7 @@
+                 interface=self.interface,
+                 bridge_interface=self.bridge_interface,
+                 vxlan=self.vxlan,
++                server_instance=self,
+             )
+             try:
+                 while True:
+@@ -1729,6 +1730,7 @@
+                     interface=self.interface,
+                     bridge_interface=self.bridge_interface,
+                     vxlan=self.vxlan,
++                    server_instance=self,
+                 )
+ 
+             if not self.clean_exit:

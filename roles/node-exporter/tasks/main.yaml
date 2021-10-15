@@ -21,7 +21,7 @@
     name: node-exporter
     image: quay.io/prometheus/node-exporter:latest
     state: started
-    network_mode: host
+    ports: 9100:9100
     pid_mode: host
     volumes:
     - /:/host:ro,rslave
@@ -34,7 +34,7 @@
     image: mindflavor/prometheus-wireguard-exporter
     state: started
     restart_policy: always
-    network_mode: host
+    ports: 9586:9586
     capabilities: [NET_ADMIN]
     command: -r
 
@@ -61,7 +61,7 @@
     image: kumina/openvpn-exporter
     state: started
     restart_policy: always
-    network_mode: host
+    ports: 9176:9176
     volumes: "{{ volume_mounts }}"
     command: "-openvpn.status_paths {{ status_paths }}"
 
@@ -106,3 +106,7 @@
 
       COMMIT
   notify: restart ufw
+
+
+- name: "Configure reverse proxy"
+  include_tasks: "reverse-proxy.yaml"
